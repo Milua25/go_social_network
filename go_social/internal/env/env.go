@@ -3,6 +3,7 @@ package env
 import (
 	"os"
 	"strconv"
+	"strings"
 )
 
 func GetString(key, fallback string) string {
@@ -10,7 +11,8 @@ func GetString(key, fallback string) string {
 	if !ok {
 		return fallback
 	}
-	return val
+	// Trim wrapping quotes that can sneak in from .env files or shell exports.
+	return strings.Trim(val, `"'`)
 }
 
 func GetInt(key string, fallback int) int {
