@@ -34,5 +34,8 @@ go.work.sum
 # .vscode/
 
 go_social/bin
+go_social/tmp
 
 .envrc
+
+tmp/
