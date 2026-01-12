@@ -1,0 +1,94 @@
+package main
+
+import (
+	"log"
+	"net/http"
+	"time"
+
+	"github.com/Milua25/go_social/internal/store"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+)
+
+type application struct {
+	config config
+	store  store.Storage
+}
+
+type config struct {
+	addr string
+	db   dbConfig
+	env  string
+}
+type dbConfig struct {
+	addr         string
+	port         string
+	maxOpenConns int
+	maxIdleConns int
+	maxIdleTime  string
+}
+
+func (app *application) userHandler(w http.ResponseWriter, req *http.Request) {
+	if req.URL.Path != "/v1/users" {
+		http.Error(w, "404 not Found", 404)
+		return
+	}
+	if req.Method != "GET" {
+		http.Error(w, "method not allowed", http.StatusNotFound)
+		return
+	}
+	w.Write([]byte("users available"))
+}
+
+func (app *application) mount() http.Handler {
+	r := chi.NewRouter()
+
+	// A good base middleware stack
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.Logger)
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("welcome"))
+	})
+
+	r.Route("/v1", func(r chi.Router) {
+		//users
+		r.Get("/users", app.userHandler)
+
+		// health
+		r.HandleFunc("/health", app.healthCheckHandler)
+
+		// posts
+		r.Route("/posts", func(r chi.Router) {
+			r.Post("/create", app.createPostHandler)
+
+			r.Route("/{postID}", func(r chi.Router) {
+				r.Use(app.postsContextMiddleware)
+				r.Get("/", app.getPostHandler)
+				r.Patch("/", app.patchPostHandler)
+				r.Delete("/", app.deletePostHandler)
+			})
+		})
+
+	})
+
+	// users
+	// auth
+
+	return r
+}
+
+func (app *application) run() error {
+	srv := &http.Server{
+		Addr:         app.config.addr,
+		Handler:      app.mount(),
+		WriteTimeout: time.Second * 30,
+		ReadTimeout:  time.Second * 10,
+		IdleTimeout:  time.Minute,
+	}
+
+	log.Println("Server running on", srv.Addr)
+	return srv.ListenAndServe()
+}
