@@ -153,14 +153,10 @@ func (app *application) patchPostHandler(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	fmt.Println(post)
-
 	// Update the post
 	post.Title = payload.Title
 	post.Content = payload.Content
 	post.Tags = payload.Tags
-
-	fmt.Println(post.Tags)
 
 	updatedPost, err := app.store.Posts.UpdateByID(req.Context(), post)
 	if err != nil {
