@@ -40,6 +40,7 @@ func (app *application) userHandler(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte("users available"))
 }
 
+// mount configures the HTTP router and middleware stack.
 func (app *application) mount() http.Handler {
 	r := chi.NewRouter()
 
@@ -74,7 +75,9 @@ func (app *application) mount() http.Handler {
 		// users
 		r.Route("/users", func(r chi.Router) {
 			r.Get("/", app.getAllUsersHandler)
-
+			r.Group(func(r chi.Router) {
+				r.Get("/feed", app.getUserFeedHandler)
+			})
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Use(app.getUserContextIdMiddleware)
 				r.Get("/", app.getUserByIdHandler)
@@ -83,6 +86,7 @@ func (app *application) mount() http.Handler {
 			})
 
 		})
+
 	})
 
 	// auth
@@ -90,6 +94,7 @@ func (app *application) mount() http.Handler {
 	return r
 }
 
+// run starts the HTTP server with timeouts applied.
 func (app *application) run() error {
 	srv := &http.Server{
 		Addr:         app.config.addr,

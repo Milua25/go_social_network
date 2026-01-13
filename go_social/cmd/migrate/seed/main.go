@@ -17,6 +17,7 @@ var (
 	DB_PASSWORD = env.GetString("DB_PASSWORD", "xxxx")
 )
 
+// main seeds the database with sample data using the migrate seed command.
 func main() {
 	// Create the connection string (DSN - Data Source Name)
 	psqlInfo := fmt.Sprintf("host=%v port=%v user=%v password=%v dbname=%v sslmode=disable",

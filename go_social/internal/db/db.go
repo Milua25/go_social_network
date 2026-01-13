@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// New opens a Postgres connection pool with the provided settings.
 func New(addr string, maxOpenConns, maxIdleConns int, maxIdleTime string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", addr)
 	if err != nil {

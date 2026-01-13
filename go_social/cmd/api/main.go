@@ -23,6 +23,7 @@ var (
 
 const version = "0.0.1"
 
+// main boots the API server, runs migrations, and starts listening.
 func main() {
 
 	// Create the connection string (DSN - Data Source Name)

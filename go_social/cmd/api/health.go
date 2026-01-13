@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+// healthCheckHandler reports service availability and metadata.
 func (app *application) healthCheckHandler(w http.ResponseWriter, req *http.Request) {
 	if req.URL.Path != "/v1/health" {
 		log.Println("404 not Found")

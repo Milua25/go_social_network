@@ -19,9 +19,10 @@ type userKey string
 const userKeyCtx userKey = "userID"
 
 type Follower struct {
-	FollowerID int64 `json:"follower_id"`
+	FollowerID int64 `json:"follower_id" validate:"required,min=1"`
 }
 
+// getUserByIdHandler handles GET /users/{userID} and returns a single user.
 func (app *application) getUserByIdHandler(w http.ResponseWriter, req *http.Request) {
 
 	user_id_string := chi.URLParam(req, "userID")
@@ -55,6 +56,7 @@ func (app *application) getUserByIdHandler(w http.ResponseWriter, req *http.Requ
 	}
 }
 
+// getAllUsersHandler handles GET /users and returns all users.
 func (app *application) getAllUsersHandler(w http.ResponseWriter, req *http.Request) {
 
 	ctx := req.Context()
@@ -76,6 +78,7 @@ func (app *application) getAllUsersHandler(w http.ResponseWriter, req *http.Requ
 	}
 }
 
+// followUserHandler handles following a user from the current requester.
 func (app *application) followUserHandler(w http.ResponseWriter, req *http.Request) {
 	// get id
 	user := getUserFromCtx(req)
@@ -93,7 +96,6 @@ func (app *application) followUserHandler(w http.ResponseWriter, req *http.Reque
 		app.badRequestError(w, req, err)
 		return
 	}
-	fmt.Println("Follower ID", payload.FollowerID)
 
 	ctx := req.Context()
 
@@ -117,6 +119,7 @@ func (app *application) followUserHandler(w http.ResponseWriter, req *http.Reque
 	}
 }
 
+// unfollowUserHandler handles removing a follow from the current requester.
 func (app *application) unfollowUserHandler(w http.ResponseWriter, req *http.Request) {
 
 	// get id
@@ -126,6 +129,11 @@ func (app *application) unfollowUserHandler(w http.ResponseWriter, req *http.Req
 	var payload Follower
 
 	if err := readJSON(w, req, &payload); err != nil {
+		app.badRequestError(w, req, err)
+		return
+	}
+	err := Validate.Struct(payload)
+	if err != nil {
 		app.badRequestError(w, req, err)
 		return
 	}
@@ -145,6 +153,7 @@ func (app *application) unfollowUserHandler(w http.ResponseWriter, req *http.Req
 }
 
 // Setting up middleware for the getUserID
+// getUserContextIdMiddleware loads the route user into context for downstream handlers.
 func (app *application) getUserContextIdMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user_id_string := chi.URLParam(r, "userID")
@@ -178,6 +187,7 @@ func (app *application) getUserContextIdMiddleware(next http.Handler) http.Handl
 	})
 }
 
+// getUserFromCtx extracts the user stored in context by getUserContextIdMiddleware.
 func getUserFromCtx(req *http.Request) *store.User {
 	val, ok := req.Context().Value(userKeyCtx).(*store.User)
 	if !ok {

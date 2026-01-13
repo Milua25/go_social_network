@@ -15,7 +15,7 @@ type PostStore struct {
 
 const QueryDurationTime = time.Minute * 2
 
-// Create Method Set for PostStore
+// Create inserts a new post and populates its ID/timestamps.
 func (ps *PostStore) Create(ctx context.Context, posts *Post) error {
 	query := `
 	INSERT INTO posts (content, title, user_id, tags)
@@ -41,7 +41,7 @@ func (ps *PostStore) Create(ctx context.Context, posts *Post) error {
 	return nil
 }
 
-// Get Method Set for PostStore
+// GetByID fetches a post by id and includes its comments plus commenter info.
 func (ps *PostStore) GetByID(ctx context.Context, post_id int) (*Post, error) {
 
 	query := `
@@ -97,7 +97,7 @@ func (ps *PostStore) GetByID(ctx context.Context, post_id int) (*Post, error) {
 	return &post, nil
 }
 
-// Update Method Set for PostStore
+// UpdateByID updates a post with optimistic locking on version and returns the updated row.
 func (ps *PostStore) UpdateByID(ctx context.Context, post *Post) (*Post, error) {
 
 	query := `UPDATE posts
@@ -132,7 +132,7 @@ RETURNING id, user_id, title, content, tags, created_at, updated_at, version;
 	return &updated, nil
 }
 
-// Delete Method Set for PostStore
+// DeleteByID removes a post by id, returning sql.ErrNoRows when nothing was deleted.
 func (ps *PostStore) DeleteByID(ctx context.Context, post_id int) error {
 
 	query := `
@@ -152,4 +152,53 @@ func (ps *PostStore) DeleteByID(ctx context.Context, post_id int) error {
 		return sql.ErrNoRows
 	}
 	return nil
+}
+
+func (ps *PostStore) GetUserFeed(ctx context.Context, userID int64, fq PaginatedFeedQuery) ([]*PostWithMetadata, error) {
+
+	query := `
+	-- direction must be either ASC/DESC injected safely, not a bind param
+	SELECT
+	p.id,
+	p.user_id,
+	p.title,
+	p.content,
+	p.created_at,
+	p.version,
+	p.tags,
+	u.username,
+	COUNT(c.id) AS comments_count
+	FROM posts AS p
+	LEFT JOIN comments AS c ON c.post_id = p.id
+	LEFT JOIN users AS u ON u.id = p.user_id
+	JOIN followers AS f
+	ON f.follower_id = p.user_id OR p.user_id = $1 -- posts from people they follow
+	WHERE p.user_id = $1 OR f.user_id IS NOT NULL  -- include own posts
+	GROUP BY p.id, p.user_id, p.title, p.content, p.created_at, p.version, p.tags, u.username
+	ORDER BY p.created_at ` + fq.Sort + `
+	LIMIT $2 OFFSET $3;`
+
+	rows, err := ps.db.QueryContext(ctx, query, userID, fq.Limit, fq.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	postsMetadata := make([]*PostWithMetadata, 0)
+
+	for rows.Next() {
+
+		var p PostWithMetadata
+		err := rows.Scan(&p.ID, &p.UserID, &p.Title, &p.Content, &p.CreatedAt, &p.Version, pq.Array(&p.Tags), &p.User.Username, &p.CommentCount)
+		if err != nil {
+			return nil, err
+		}
+
+		postsMetadata = append(postsMetadata, &p)
+		if rows.Err() != nil {
+			return nil, err
+		}
+
+	}
+
+	return postsMetadata, nil
 }

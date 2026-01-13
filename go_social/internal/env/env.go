@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// GetString reads an env var and returns the fallback when missing.
 func GetString(key, fallback string) string {
 	val, ok := os.LookupEnv(key)
 	if !ok {
@@ -15,6 +16,7 @@ func GetString(key, fallback string) string {
 	return strings.Trim(val, `"'`)
 }
 
+// GetInt reads an integer env var or returns the fallback on missing/parse failure.
 func GetInt(key string, fallback int) int {
 	val, ok := os.LookupEnv(key)
 	if !ok {

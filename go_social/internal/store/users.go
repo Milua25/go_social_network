@@ -9,6 +9,7 @@ type UserStore struct {
 	db *sql.DB
 }
 
+// Create inserts a new user and sets the generated ID/CreatedAt fields.
 func (us *UserStore) Create(ctx context.Context, users *User) error {
 	query := `
 	INSERT INTO users (username, password, email) VALUES ($1, $2, $3) RETURNING id, created_at
@@ -21,6 +22,7 @@ func (us *UserStore) Create(ctx context.Context, users *User) error {
 	return nil
 }
 
+// GetUserByID fetches a single user by its ID.
 func (us *UserStore) GetUserByID(ctx context.Context, user_id int) (*User, error) {
 	query := `
 		SELECT id, username,email, created_at FROM users WHERE id = $1
@@ -37,6 +39,7 @@ func (us *UserStore) GetUserByID(ctx context.Context, user_id int) (*User, error
 	return &user, nil
 }
 
+// GetUsers returns all users in the system.
 func (us *UserStore) GetUsers(ctx context.Context) ([]*User, error) {
 	query := `
 		SELECT id, username,email, created_at FROM users;

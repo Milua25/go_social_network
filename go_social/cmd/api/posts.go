@@ -30,7 +30,7 @@ type createPostPayload struct {
 // 	//Comments []string `json:"comments"`
 // }
 
-// Create a post
+// createPostHandler handles POST /v1/posts/create to create a post.
 func (app *application) createPostHandler(w http.ResponseWriter, req *http.Request) {
 
 	userID := 1
@@ -67,6 +67,7 @@ func (app *application) createPostHandler(w http.ResponseWriter, req *http.Reque
 	}
 }
 
+// getPostHandler returns a post along with its comments.
 func (app *application) getPostHandler(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
@@ -110,6 +111,7 @@ func (app *application) getPostHandler(w http.ResponseWriter, req *http.Request)
 
 }
 
+// deletePostHandler removes a post by id.
 func (app *application) deletePostHandler(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
@@ -133,6 +135,7 @@ func (app *application) deletePostHandler(w http.ResponseWriter, req *http.Reque
 	app.jsonResponse(w, http.StatusNoContent, "Post deleted")
 }
 
+// patchPostHandler updates mutable post fields using the context-loaded post.
 func (app *application) patchPostHandler(w http.ResponseWriter, req *http.Request) {
 
 	var payload createPostPayload
@@ -171,6 +174,7 @@ func (app *application) patchPostHandler(w http.ResponseWriter, req *http.Reques
 	}
 }
 
+// postsContextMiddleware fetches a post by path param and stores it in context.
 func (app *application) postsContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
@@ -199,6 +203,7 @@ func (app *application) postsContextMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// getPostFromCtx extracts the post placed in context by postsContextMiddleware.
 func getPostFromCtx(req *http.Request) *store.Post {
 	post, _ := req.Context().Value(postCTX).(*store.Post)
 

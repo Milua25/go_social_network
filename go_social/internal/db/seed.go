@@ -123,6 +123,7 @@ var blogContents = []string{
 	"How to stay human-centric in a world increasingly run by algorithms.",
 }
 
+// Seed populates the database with sample users, posts, and comments.
 func Seed(st store.Storage) {
 	ctx := context.Background()
 
@@ -156,6 +157,7 @@ func Seed(st store.Storage) {
 	}
 }
 
+// generateUsers builds a slice of synthetic users.
 func generateUsers(num int) []*store.User {
 	users := make([]*store.User, num)
 	for i := 0; i < num; i++ {
@@ -168,6 +170,7 @@ func generateUsers(num int) []*store.User {
 	return users
 }
 
+// generatePosts builds sample posts tied to the provided users.
 func generatePosts(num int, users []*store.User, rng *rand.Rand) []*store.Post {
 	posts := make([]*store.Post, 0, num)
 	if len(users) == 0 {
@@ -188,6 +191,7 @@ func generatePosts(num int, users []*store.User, rng *rand.Rand) []*store.Post {
 	return posts
 }
 
+// generateComments builds sample comments tied to the provided users and posts.
 func generateComments(num int, users []*store.User, posts []*store.Post, rng *rand.Rand) []*store.Comment {
 	comments := make([]*store.Comment, 0, num)
 	if len(users) == 0 || len(posts) == 0 {

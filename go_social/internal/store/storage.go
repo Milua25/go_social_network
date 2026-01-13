@@ -14,7 +14,8 @@ type Storage struct {
 		Create(context.Context, *Post) error
 		GetByID(context.Context, int) (*Post, error)
 		UpdateByID(ctx context.Context, post *Post) (*Post, error)
-		DeleteByID(ctx context.Context, post_id int) error
+		DeleteByID(ctx context.Context, postID int) error
+		GetUserFeed(ctx context.Context, userID int64, fq PaginatedFeedQuery) ([]*PostWithMetadata, error)
 	}
 	Users interface {
 		Create(context.Context, *User) error
@@ -31,6 +32,7 @@ type Storage struct {
 	}
 }
 
+// NewPGStorage wires up the concrete Postgres-backed stores into a single Storage facade.
 func NewPGStorage(db *sql.DB) Storage {
 	return Storage{
 		Posts: &PostStore{

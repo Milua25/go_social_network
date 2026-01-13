@@ -9,6 +9,7 @@ type CommentStore struct {
 	db *sql.DB
 }
 
+// GetByPostID returns all comments (with user info) for a given post ID.
 func (com *CommentStore) GetByPostID(ctx context.Context, post_id int64) ([]*Comment, error) {
 	query := `SELECT
   c.id,
@@ -44,7 +45,7 @@ ORDER BY c.created_at DESC;
 	return comments, nil
 }
 
-// Create Method Set for PostStore
+// Create inserts a new comment row and populates its ID/CreatedAt fields.
 func (ps *CommentStore) Create(ctx context.Context, comment *Comment) error {
 	query := `
 	INSERT INTO comments (post_id, user_id, content)
