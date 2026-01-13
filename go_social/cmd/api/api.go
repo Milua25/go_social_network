@@ -55,7 +55,6 @@ func (app *application) mount() http.Handler {
 
 	r.Route("/v1", func(r chi.Router) {
 		//users
-		r.Get("/users", app.userHandler)
 
 		// health
 		r.HandleFunc("/health", app.healthCheckHandler)
@@ -72,9 +71,20 @@ func (app *application) mount() http.Handler {
 			})
 		})
 
+		// users
+		r.Route("/users", func(r chi.Router) {
+			r.Get("/", app.getAllUsersHandler)
+
+			r.Route("/{userID}", func(r chi.Router) {
+				r.Use(app.getUserContextIdMiddleware)
+				r.Get("/", app.getUserByIdHandler)
+				r.Put("/follow", app.followUserHandler)
+				r.Put("/unfollow", app.unfollowUserHandler)
+			})
+
+		})
 	})
 
-	// users
 	// auth
 
 	return r

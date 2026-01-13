@@ -2,7 +2,7 @@ package store
 
 import "time"
 
-type Posts struct {
+type Post struct {
 	ID        int64     `json:"id"`
 	Content   string    `json:"content"`
 	Title     string    `json:"title"`
@@ -14,7 +14,7 @@ type Posts struct {
 	Comments  []Comment `json:"comments"`
 }
 
-type Users struct {
+type User struct {
 	ID        int64     `json:"id"`
 	Username  string    `json:"username"`
 	Password  string    `json:"-"` // not returning the password
@@ -28,5 +28,11 @@ type Comment struct {
 	UserID    int64  `json:"user_id"`
 	Content   string `json:"content"`
 	CreatedAt string `json:"created_at"`
-	User      Users  `json:"users"`
+	User      User   `json:"user"`
+}
+
+type Follower struct {
+	UserID     int64  `json:"user_id"`
+	FollowerID int64  `json:"follower_id"`
+	CreatedAt  string `json:"created_at"`
 }

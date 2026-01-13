@@ -47,7 +47,7 @@ func (app *application) createPostHandler(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	post := &store.Posts{
+	post := &store.Post{
 		Title:   payload.Title,
 		Content: payload.Content,
 		UserID:  int64(userID),
@@ -199,8 +199,8 @@ func (app *application) postsContextMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func getPostFromCtx(req *http.Request) *store.Posts {
-	post, _ := req.Context().Value(postCTX).(*store.Posts)
+func getPostFromCtx(req *http.Request) *store.Post {
+	post, _ := req.Context().Value(postCTX).(*store.Post)
 
 	return post
 }

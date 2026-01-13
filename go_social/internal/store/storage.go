@@ -11,17 +11,23 @@ import (
 
 type Storage struct {
 	Posts interface {
-		Create(context.Context, *Posts) error
-		GetByID(context.Context, int) (*Posts, error)
-		UpdateByID(ctx context.Context, post *Posts) (*Posts, error)
+		Create(context.Context, *Post) error
+		GetByID(context.Context, int) (*Post, error)
+		UpdateByID(ctx context.Context, post *Post) (*Post, error)
 		DeleteByID(ctx context.Context, post_id int) error
 	}
 	Users interface {
-		Create(context.Context, *Users) error
+		Create(context.Context, *User) error
+		GetUserByID(ctx context.Context, user_id int) (*User, error)
+		GetUsers(ctx context.Context) ([]*User, error)
 	}
 	Comments interface {
 		Create(context.Context, *Comment) error
 		GetByPostID(ctx context.Context, post_id int64) ([]*Comment, error)
+	}
+	Followers interface {
+		Follow(ctx context.Context, followerId, userId int64) error
+		UnFollow(ctx context.Context, followerId, userId int64) error
 	}
 }
 
@@ -34,6 +40,9 @@ func NewPGStorage(db *sql.DB) Storage {
 			db: db,
 		},
 		Comments: &CommentStore{
+			db: db,
+		},
+		Followers: &FollowerStore{
 			db: db,
 		},
 	}
