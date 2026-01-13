@@ -22,3 +22,8 @@ migrate-down:
 seed:
 	@direnv allow /Users/ayomideademilua/Development/go_crash_course/go_social/.envrc
 	@go run cmd/migrate/seed/main.go
+
+.PHONY: gen-docs
+gen-docs:
+	@swag init -g ./api/main.go -d cmd,internal && swag fmt
+	

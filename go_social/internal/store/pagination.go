@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -55,11 +56,13 @@ func (fq PaginatedFeedQuery) Parse(req *http.Request) (PaginatedFeedQuery, error
 	since := qs.Get("since")
 	if since != "" {
 		fq.Since = parseTime(since)
+		fmt.Println(fq.Since)
 	}
 
 	until := qs.Get("until")
 	if since != "" {
-		fq.Since = parseTime(until)
+		fq.Until = parseTime(until)
+		fmt.Println(fq.Until)
 	}
 
 	return fq, nil
@@ -67,9 +70,18 @@ func (fq PaginatedFeedQuery) Parse(req *http.Request) (PaginatedFeedQuery, error
 }
 
 func parseTime(s string) string {
-	t, err := time.Parse(time.DateTime, s)
-	if err != nil {
-		return ""
+	layouts := []string{
+		time.RFC3339,
+		"2006-01-02 15:04:05", // no zone
+		"2006-01-02",          // date only
 	}
-	return t.Format(time.DateTime)
+	for _, layout := range layouts {
+		if t, err := time.Parse(layout, s); err == nil {
+			t.Format(time.RFC3339)
+		}
+	}
+	return ""
+
 }
+
+// Normalize to RFC3339 (e.g., 2006-01-02T15:04:05Z07:00) to match typical Postgres timestamptz text.

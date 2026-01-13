@@ -24,6 +24,23 @@ var (
 const version = "0.0.1"
 
 // main boots the API server, runs migrations, and starts listening.
+//	@title			Swagger Example API
+//	@version		1.0
+//	@description	This is my Social Web API.
+//	@termsOfService	http://swagger.io/terms/
+
+//	@contact.name	API Support
+//	@contact.url	http://www.swagger.io/support
+//	@contact.email	support@swagger.io
+
+//	@license.name	Apache 2.0
+//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @BasePath					/v1
+// @securitydefinitions.apikey	ApiKeyAuth
+// @in							header
+// @name						Authorization
+// @description
 func main() {
 
 	// Create the connection string (DSN - Data Source Name)
@@ -33,7 +50,8 @@ func main() {
 	log.Println(psqlInfo)
 
 	cfg := config{
-		addr: env.GetString("ADDR", ":8080"),
+		addr:   env.GetString("ADDR", ":8080"),
+		apiURL: env.GetString("EXTERNAL_URL", "localhost:3000"),
 		db: dbConfig{
 			addr:         psqlInfo,
 			maxOpenConns: env.GetInt("DB_MAX_OPEN_CONN", 30),

@@ -16,6 +16,21 @@ type postKey string
 
 const postCTX postKey = "post"
 
+// CreatePost godoc
+//
+//	@Summary		Creates a post
+//	@Description	Creates a post
+//	@Tags			posts
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		CreatePostPayload	true	"Post payload"
+//	@Success		201		{object}	store.Post
+//	@Failure		400		{object}	error
+//	@Failure		401		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts [post]
+//
 // CreatePostPayload
 type createPostPayload struct {
 	Content string   `json:"content" validate:"required,max=1000"`
@@ -30,7 +45,17 @@ type createPostPayload struct {
 // 	//Comments []string `json:"comments"`
 // }
 
-// createPostHandler handles POST /v1/posts/create to create a post.
+// createPostHandler godoc
+// @Summary     Create a post
+// @Description Creates a post for the current user
+// @Tags        posts
+// @Accept      json
+// @Produce     json
+// @Param       payload body createPostPayload true "Post payload"
+// @Success     200 {object} store.Post
+// @Failure     400 {object} map[string]string
+// @Failure     500 {object} map[string]string
+// @Router      /posts/create [post]
 func (app *application) createPostHandler(w http.ResponseWriter, req *http.Request) {
 
 	userID := 1
@@ -67,7 +92,16 @@ func (app *application) createPostHandler(w http.ResponseWriter, req *http.Reque
 	}
 }
 
-// getPostHandler returns a post along with its comments.
+// getPostHandler godoc
+// @Summary     Get a post
+// @Description Returns a post along with its comments
+// @Tags        posts
+// @Produce     json
+// @Param       postID path int true "Post ID"
+// @Success     200 {object} store.Post
+// @Failure     404 {object} map[string]string
+// @Failure     500 {object} map[string]string
+// @Router      /posts/{postID} [get]
 func (app *application) getPostHandler(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
@@ -111,7 +145,14 @@ func (app *application) getPostHandler(w http.ResponseWriter, req *http.Request)
 
 }
 
-// deletePostHandler removes a post by id.
+// deletePostHandler godoc
+// @Summary     Delete a post
+// @Tags        posts
+// @Param       postID path int true "Post ID"
+// @Success     204
+// @Failure     404 {object} map[string]string
+// @Failure     500 {object} map[string]string
+// @Router      /posts/{postID} [delete]
 func (app *application) deletePostHandler(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
@@ -135,7 +176,19 @@ func (app *application) deletePostHandler(w http.ResponseWriter, req *http.Reque
 	app.jsonResponse(w, http.StatusNoContent, "Post deleted")
 }
 
-// patchPostHandler updates mutable post fields using the context-loaded post.
+// patchPostHandler godoc
+// @Summary     Update a post
+// @Description Updates post fields for the given ID
+// @Tags        posts
+// @Accept      json
+// @Produce     json
+// @Param       postID path int true "Post ID"
+// @Param       payload body createPostPayload true "Post payload"
+// @Success     200 {object} store.Post
+// @Failure     400 {object} map[string]string
+// @Failure     404 {object} map[string]string
+// @Failure     500 {object} map[string]string
+// @Router      /posts/{postID} [patch]
 func (app *application) patchPostHandler(w http.ResponseWriter, req *http.Request) {
 
 	var payload createPostPayload

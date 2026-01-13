@@ -1,13 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/Milua25/go_social/docs"
 	"github.com/Milua25/go_social/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger" // http-swagger middleware
 )
 
 type application struct {
@@ -16,9 +19,10 @@ type application struct {
 }
 
 type config struct {
-	addr string
-	db   dbConfig
-	env  string
+	addr   string
+	db     dbConfig
+	env    string
+	apiURL string
 }
 type dbConfig struct {
 	addr         string
@@ -28,17 +32,17 @@ type dbConfig struct {
 	maxIdleTime  string
 }
 
-func (app *application) userHandler(w http.ResponseWriter, req *http.Request) {
-	if req.URL.Path != "/v1/users" {
-		http.Error(w, "404 not Found", 404)
-		return
-	}
-	if req.Method != "GET" {
-		http.Error(w, "method not allowed", http.StatusNotFound)
-		return
-	}
-	w.Write([]byte("users available"))
-}
+// func (app *application) userHandler(w http.ResponseWriter, req *http.Request) {
+// 	if req.URL.Path != "/v1/users" {
+// 		http.Error(w, "404 not Found", 404)
+// 		return
+// 	}
+// 	if req.Method != "GET" {
+// 		http.Error(w, "method not allowed", http.StatusNotFound)
+// 		return
+// 	}
+// 	w.Write([]byte("users available"))
+// }
 
 // mount configures the HTTP router and middleware stack.
 func (app *application) mount() http.Handler {
@@ -59,6 +63,10 @@ func (app *application) mount() http.Handler {
 
 		// health
 		r.HandleFunc("/health", app.healthCheckHandler)
+
+		// config
+		docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
+		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
 
 		// posts
 		r.Route("/posts", func(r chi.Router) {
@@ -96,6 +104,12 @@ func (app *application) mount() http.Handler {
 
 // run starts the HTTP server with timeouts applied.
 func (app *application) run() error {
+	// Docs
+	docs.SwaggerInfo.Version = version
+	docs.SwaggerInfo.Host = app.config.apiURL
+	docs.SwaggerInfo.BasePath = "/v1"
+	docs.SwaggerInfo.Title = "Social Network API"
+
 	srv := &http.Server{
 		Addr:         app.config.addr,
 		Handler:      app.mount(),

@@ -174,12 +174,12 @@ func (ps *PostStore) GetUserFeed(ctx context.Context, userID int64, fq Paginated
 	JOIN followers AS f
 	ON f.follower_id = p.user_id OR p.user_id = $1 -- posts from people they follow
 	WHERE 
-	p.user_id = $1 AND (p.title ILIKE '%' || $4 || '%' OR p.content ILIKE '%' || $4 || '%' )  -- include own posts
+	p.user_id = $1 AND (p.title ILIKE '%' || $4 || '%' OR p.content ILIKE '%' || $4 || '%' ) AND (p.tags @> $5 OR $5 = '{}') -- include own posts
 	GROUP BY p.id, p.user_id, p.title, p.content, p.created_at, p.version, p.tags, u.username
 	ORDER BY p.created_at ` + fq.Sort + `
 	LIMIT $2 OFFSET $3;`
 
-	rows, err := ps.db.QueryContext(ctx, query, userID, fq.Limit, fq.Offset, fq.Search)
+	rows, err := ps.db.QueryContext(ctx, query, userID, fq.Limit, fq.Offset, fq.Search, pq.Array(fq.Tags))
 	if err != nil {
 		return nil, err
 	}
