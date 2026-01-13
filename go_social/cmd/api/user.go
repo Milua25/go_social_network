@@ -18,34 +18,20 @@ type userKey string
 
 const userKeyCtx userKey = "userID"
 
-// GetUser godoc
-//
-//	@Summary		Fetches a user profile
-//	@Description	Fetches a user profile by ID
-//	@Tags			users
-//	@Accept			json
-//	@Produce		json
-//	@Param			id	path		int	true	"User ID"
-//	@Success		200	{object}	store.User
-//	@Failure		400	{object}	error
-//	@Failure		404	{object}	error
-//	@Failure		500	{object}	error
-//	@Security		ApiKeyAuth
-//	@Router			/users/{id} [get]
-
 type Follower struct {
 	FollowerID int64 `json:"follower_id" validate:"required,min=1"`
 }
 
-// getUserByIdHandler handles GET /users/{userID} and returns a single user.
 // getUserByIdHandler godoc
-// @Summary     Get user
-// @Tags        users
-// @Produce     json
-// @Param       userID path int true "User ID"
-// @Success     200 {object} store.User
-// @Failure     404 {object} error
-// @Router      /users/{userID}
+//
+//	@Summary		Get user
+//	@Description	Returns a user by ID
+//	@Tags			users
+//	@Produce		json
+//	@Param			userID	path		int	true	"User ID"
+//	@Success		200		{object}	store.User
+//	@Failure		404		{object}	map[string]string
+//	@Router			/users/{userID} [get]
 func (app *application) getUserByIdHandler(w http.ResponseWriter, req *http.Request) {
 
 	user_id_string := chi.URLParam(req, "userID")
@@ -79,8 +65,6 @@ func (app *application) getUserByIdHandler(w http.ResponseWriter, req *http.Requ
 	}
 }
 
-// getAllUsersHandler handles GET /users and returns all users.
-
 // getAllUsersHandler godoc
 //
 //	@Summary		List users
@@ -110,17 +94,18 @@ func (app *application) getAllUsersHandler(w http.ResponseWriter, req *http.Requ
 	}
 }
 
-// followUserHandler handles following a user from the current requester.
 // followUserHandler godoc
-// @Summary     Follow user
-// @Tags        users
-// @Accept      json
-// @Produce     json
-// @Param       userID   path int     true "User ID"
-// @Param       follower body Follower true "Follower payload"
-// @Success     204
-// @Failure     409 {object} error
-// @Router      /users/{userID}/follow [put]
+//
+//	@Summary		Follow user
+//	@Description	Current user follows the target user
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			userID		path	int			true	"User ID"
+//	@Param			follower	body	Follower	true	"Follower payload"
+//	@Success		204
+//	@Failure		409	{object}	map[string]string
+//	@Router			/users/{userID}/follow [put]
 func (app *application) followUserHandler(w http.ResponseWriter, req *http.Request) {
 	// get id
 	user := getUserFromCtx(req)
@@ -161,16 +146,17 @@ func (app *application) followUserHandler(w http.ResponseWriter, req *http.Reque
 	}
 }
 
-// unfollowUserHandler handles removing a follow from the current requester.
 // unfollowUserHandler godoc
-// @Summary     Unfollow user
-// @Tags        users
-// @Accept      json
-// @Produce     json
-// @Param       userID   path int      true "User ID"
-// @Param       follower body Follower true "Follower payload"
-// @Success     204
-// @Router      /users/{userID}/unfollow [put]
+//
+//	@Summary		Unfollow user
+//	@Description	Current user unfollows the target user
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			userID		path	int			true	"User ID"
+//	@Param			follower	body	Follower	true	"Unfollow payload"
+//	@Success		204
+//	@Router			/users/{userID}/unfollow [put]
 func (app *application) unfollowUserHandler(w http.ResponseWriter, req *http.Request) {
 
 	// get id
