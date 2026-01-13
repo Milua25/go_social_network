@@ -7,6 +7,7 @@ import (
 	"github.com/Milua25/go_social/internal/db"
 	"github.com/Milua25/go_social/internal/env"
 	"github.com/Milua25/go_social/internal/store"
+	"go.uber.org/zap"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -43,6 +44,10 @@ const version = "0.0.1"
 // @description
 func main() {
 
+	// logger
+	logger := zap.Must(zap.NewProduction()).Sugar()
+	defer logger.Sync()
+
 	// Create the connection string (DSN - Data Source Name)
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME)
@@ -58,12 +63,13 @@ func main() {
 			maxIdleConns: env.GetInt("DB_MAX_IDLE_CONN", 30),
 			maxIdleTime:  env.GetString("DB_MAX_IDLE_TIME", "15m"),
 		},
-		env: env.GetString("ENV", "development"),
+		env:    env.GetString("ENV", "development"),
+		logger: logger,
 	}
 
 	db, err := db.New(cfg.db.addr, cfg.db.maxOpenConns, cfg.db.maxIdleConns, cfg.db.maxIdleTime)
 	if err != nil {
-		log.Panicln(err)
+		logger.Fatalln(err)
 	}
 
 	defer db.Close()
@@ -81,10 +87,10 @@ func main() {
 		if err != migrate.ErrNoChange {
 			log.Fatal(err)
 		}
-		log.Println("No new migrations to apply")
+		logger.Info("No new migrations to apply")
 	}
 
-	log.Println("Database connection established")
+	logger.Info("Database connection established")
 
 	store := store.NewPGStorage(db)
 
@@ -94,6 +100,6 @@ func main() {
 	}
 
 	if err := app.run(); err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 }

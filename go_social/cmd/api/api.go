@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	httpSwagger "github.com/swaggo/http-swagger" // http-swagger middleware
+	"go.uber.org/zap"
 )
 
 type application struct {
@@ -23,6 +23,7 @@ type config struct {
 	db     dbConfig
 	env    string
 	apiURL string
+	logger *zap.SugaredLogger
 }
 type dbConfig struct {
 	addr         string
@@ -118,6 +119,6 @@ func (app *application) run() error {
 		IdleTimeout:  time.Minute,
 	}
 
-	log.Println("Server running on", srv.Addr)
+	app.config.logger.Infow("Server running on", "addr", srv.Addr, "env", app.config.env)
 	return srv.ListenAndServe()
 }

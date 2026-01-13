@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -109,7 +108,7 @@ func (app *application) getPostHandler(w http.ResponseWriter, req *http.Request)
 
 	post_id, err := strconv.Atoi(chi.URLParam(req, "postID"))
 	if err != nil {
-		log.Println(err)
+		app.config.logger.Errorln(err)
 		return
 	}
 
@@ -161,7 +160,7 @@ func (app *application) deletePostHandler(w http.ResponseWriter, req *http.Reque
 
 	post_id, err := strconv.Atoi(chi.URLParam(req, "postID"))
 	if err != nil {
-		log.Println(err)
+		app.config.logger.Errorln(err)
 		return
 	}
 
@@ -238,7 +237,7 @@ func (app *application) postsContextMiddleware(next http.Handler) http.Handler {
 
 		post_id, err := strconv.Atoi(chi.URLParam(req, "postID"))
 		if err != nil {
-			log.Println(err)
+			app.config.logger.Errorln(err)
 			return
 		}
 

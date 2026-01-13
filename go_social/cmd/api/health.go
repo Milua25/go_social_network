@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 )
 
@@ -15,7 +14,7 @@ import (
 //	@Router			/health [get]
 func (app *application) healthCheckHandler(w http.ResponseWriter, req *http.Request) {
 	if req.URL.Path != "/v1/health" {
-		log.Println("404 not Found")
+		app.config.logger.Errorln("404 not Found")
 		writeJSONError(w, http.StatusNotFound, "404 not Found")
 		return
 	}
@@ -33,7 +32,7 @@ func (app *application) healthCheckHandler(w http.ResponseWriter, req *http.Requ
 	}
 
 	if err := writeJSON(w, http.StatusOK, data); err != nil {
-		log.Println(err)
+		app.config.logger.Errorln(err)
 		writeJSONError(w, http.StatusInternalServerError, err.Error())
 	}
 }
