@@ -14,11 +14,15 @@ require (
 	golang.org/x/crypto v0.47.0
 )
 
-require github.com/sendgrid/rest v2.6.9+incompatible // indirect
+require (
+	github.com/sendgrid/rest v2.6.9+incompatible // indirect
+	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
+)
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
+	github.com/go-chi/cors v1.2.2
 	github.com/go-openapi/jsonpointer v0.22.4 // indirect
 	github.com/go-openapi/jsonreference v0.21.4 // indirect
 	github.com/go-openapi/spec v0.22.3 // indirect
@@ -43,4 +47,5 @@ require (
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/tools v0.41.0 // indirect
+	gopkg.in/mail.v2 v2.3.1
 )

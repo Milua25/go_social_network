@@ -97,11 +97,13 @@ func (app *application) registerUserHandler(w http.ResponseWriter, req *http.Req
 		Username:      user.Username,
 		ActivationURL: activationURL,
 	}
+
 	// send mail
-	if err = app.mailer.Send(mailer.UserWelcometemplate, user.Username, user.Email, vars, !isProdEnv); err != nil {
+	_, err = app.mailer.Send(mailer.UserWelcometemplate, user.Username, user.Email, vars, !isProdEnv)
+	if err != nil {
 		app.config.logger.Errorw("error sending welcome email", "error", err)
 
-		// rollback user creatinf if email fails (SAGA pattern)
+		// rollback user creating if email fails (SAGA pattern)
 		if err := app.store.Users.Delete(ctx, user.ID); err != nil {
 			app.config.logger.Errorw("error deleting user", "error", err)
 		}

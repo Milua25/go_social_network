@@ -54,8 +54,6 @@ func main() {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME)
 
-	log.Println(psqlInfo)
-
 	cfg := config{
 		addr:        env.GetString("ADDR", ":8080"),
 		apiURL:      env.GetString("EXTERNAL_URL", "localhost:3000"),
@@ -74,8 +72,13 @@ func main() {
 			sendGrid: sendGridConfig{
 				apiKey: env.GetString("SENDGRID_API_KEY", ""),
 			},
+			mailTrap: mailTrapConfig{
+				apiKey: env.GetString("MAILTRAP_KEY", ""),
+			},
 		},
 	}
+
+	logger.Info(cfg)
 
 	db, err := db.New(cfg.db.addr, cfg.db.maxOpenConns, cfg.db.maxIdleConns, cfg.db.maxIdleTime)
 	if err != nil {
@@ -106,12 +109,15 @@ func main() {
 
 	store := store.NewPGStorage(db)
 
-	mailer := mailer.NenSendGrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
+	// sendGrid Mailer
+	// mailer := mailer.NenSendGrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
+
+	mailtrap, err := mailer.NewMailTrapClient(cfg.mail.mailTrap.apiKey, cfg.mail.fromEmail)
 
 	app := &application{
 		config: cfg,
 		store:  store,
-		mailer: mailer,
+		mailer: mailtrap,
 	}
 
 	if err := app.run(); err != nil {
