@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"math/rand"
@@ -124,14 +125,15 @@ var blogContents = []string{
 }
 
 // Seed populates the database with sample users, posts, and comments.
-func Seed(st store.Storage) {
+func Seed(st store.Storage, db *sql.DB) {
 	ctx := context.Background()
 
 	allUsers := generateUsers(100)
 	created_users := make([]*store.User, 0, len(allUsers))
+	tx, _ := db.BeginTx(ctx, nil)
 
 	for _, u := range allUsers {
-		if err := st.Users.Create(ctx, u); err != nil {
+		if err := st.Users.Create(ctx, tx, u); err != nil {
 			log.Println("error creating user:", err)
 			continue // skip bad users
 		}
@@ -160,11 +162,14 @@ func Seed(st store.Storage) {
 // generateUsers builds a slice of synthetic users.
 func generateUsers(num int) []*store.User {
 	users := make([]*store.User, num)
+
 	for i := 0; i < num; i++ {
 		users[i] = &store.User{
 			Username: usernames[i%len(usernames)] + fmt.Sprintf("%d", i),
-			Password: "1231345",
 			Email:    usernames[i%len(usernames)] + fmt.Sprintf("%d", i) + "@example.com",
+		}
+		if err := users[i].Password.Set("password123"); err != nil {
+			continue
 		}
 	}
 	return users

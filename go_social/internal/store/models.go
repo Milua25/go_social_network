@@ -1,6 +1,10 @@
 package store
 
-import "time"
+import (
+	"time"
+
+	"golang.org/x/crypto/bcrypt"
+)
 
 type Post struct {
 	ID        int64     `json:"id"`
@@ -23,9 +27,27 @@ type PostWithMetadata struct {
 type User struct {
 	ID        int64     `json:"id"`
 	Username  string    `json:"username"`
-	Password  string    `json:"-"` // not returning the password
+	Password  password  `json:"-"` // not returning the password
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
+	IsActive  bool      `json:"is_active"`
+}
+
+type password struct {
+	text *string
+	hash []byte
+}
+
+// Set hashes and stores the provided plaintext password.
+func (p *password) Set(text string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(text), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	p.text = &text
+	p.hash = hash
+
+	return nil
 }
 
 type Comment struct {

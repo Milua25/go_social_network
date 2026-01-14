@@ -18,6 +18,7 @@ type PaginatedFeedQuery struct {
 	Until  string   `json:"until"`
 }
 
+// Parse populates the query struct from URL parameters, leaving defaults when absent.
 func (fq PaginatedFeedQuery) Parse(req *http.Request) (PaginatedFeedQuery, error) {
 	qs := req.URL.Query()
 	limit := qs.Get("limit")
@@ -69,6 +70,7 @@ func (fq PaginatedFeedQuery) Parse(req *http.Request) (PaginatedFeedQuery, error
 
 }
 
+// parseTime tries several layouts and returns an RFC3339 string or empty on failure.
 func parseTime(s string) string {
 	layouts := []string{
 		time.RFC3339,
@@ -77,11 +79,8 @@ func parseTime(s string) string {
 	}
 	for _, layout := range layouts {
 		if t, err := time.Parse(layout, s); err == nil {
-			t.Format(time.RFC3339)
+			return t.Format(time.RFC3339)
 		}
 	}
 	return ""
-
 }
-
-// Normalize to RFC3339 (e.g., 2006-01-02T15:04:05Z07:00) to match typical Postgres timestamptz text.

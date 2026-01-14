@@ -17,6 +17,9 @@ migrate-up:
 migrate-down:
 	@migrate -path=$(MIGRATIONS_PATH) -database=postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST)/$(DB_NAME)?sslmode=disable down $(filter-out $@,$(MAKECMDGOALS))
 
+.PHONY: migrate-force
+migrate-force:
+	@migrate -path=$(MIGRATIONS_PATH) -database=postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST)/$(DB_NAME)?sslmode=disable force 10 $(filter-out $@,$(MAKECMDGOALS))
 
 .PHONY: seed
 seed:

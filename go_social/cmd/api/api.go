@@ -24,7 +24,13 @@ type config struct {
 	env    string
 	apiURL string
 	logger *zap.SugaredLogger
+	mail   mailConfig
 }
+
+type mailConfig struct {
+	exp time.Duration
+}
+
 type dbConfig struct {
 	addr         string
 	port         string
@@ -60,8 +66,6 @@ func (app *application) mount() http.Handler {
 	})
 
 	r.Route("/v1", func(r chi.Router) {
-		//users
-
 		// health
 		r.HandleFunc("/health", app.healthCheckHandler)
 
@@ -83,6 +87,8 @@ func (app *application) mount() http.Handler {
 
 		// users
 		r.Route("/users", func(r chi.Router) {
+			r.Put("/activate/{token}", app.activateUserHandler)
+
 			r.Get("/", app.getAllUsersHandler)
 			r.Group(func(r chi.Router) {
 				r.Get("/feed", app.getUserFeedHandler)
@@ -94,6 +100,11 @@ func (app *application) mount() http.Handler {
 				r.Put("/unfollow", app.unfollowUserHandler)
 			})
 
+		})
+
+		// public routes
+		r.Route("/authentication", func(r chi.Router) {
+			r.Post("/user", app.registerUserHandler)
 		})
 
 	})

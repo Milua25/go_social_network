@@ -235,3 +235,34 @@ func getUserFromCtx(req *http.Request) *store.User {
 
 	return val
 }
+
+// activateUserHandler godoc
+//
+//	@Summary		Activate user
+//	@Description	Activates a user using an invitation token
+//	@Tags			users
+//	@Produce		json
+//	@Param			token	path	string	true	"Invitation token"
+//	@Success		204
+//	@Failure		400	{object}	map[string]string
+//	@Router			/users/activate/{token} [post]
+func (app *application) activateUserHandler(w http.ResponseWriter, req *http.Request) {
+	token := chi.URLParam(req, "token")
+
+	err := app.store.Users.Activate(req.Context(), token)
+
+	if err != nil {
+		switch err {
+		case store.ErrNotFound:
+			app.badRequestError(w, req, err)
+		default:
+			app.internalServerError(w, req, err)
+		}
+		return
+	}
+
+	if err := app.jsonResponse(w, http.StatusNoContent, nil); err != nil {
+		app.internalServerError(w, req, err)
+	}
+
+}

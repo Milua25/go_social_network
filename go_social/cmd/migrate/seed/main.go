@@ -31,6 +31,7 @@ func main() {
 	defer conn.Close()
 
 	store := store.NewPGStorage(conn)
-	db.Seed(store)
+
+	db.Seed(store, conn)
 
 }

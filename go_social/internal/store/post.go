@@ -154,6 +154,7 @@ func (ps *PostStore) DeleteByID(ctx context.Context, post_id int) error {
 	return nil
 }
 
+// GetUserFeed returns posts for a user feed with comment counts, tags, and search/filtering applied.
 func (ps *PostStore) GetUserFeed(ctx context.Context, userID int64, fq PaginatedFeedQuery) ([]*PostWithMetadata, error) {
 
 	query := `

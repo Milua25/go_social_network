@@ -3,11 +3,13 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"time"
 )
 
-// var (
-// 	ErrNotFound = "Results not Found"
-// )
+var (
+	ErrNotFound = errors.New("Results not Found")
+)
 
 type Storage struct {
 	Posts interface {
@@ -18,9 +20,11 @@ type Storage struct {
 		GetUserFeed(ctx context.Context, userID int64, fq PaginatedFeedQuery) ([]*PostWithMetadata, error)
 	}
 	Users interface {
-		Create(context.Context, *User) error
+		Create(context.Context, *sql.Tx, *User) error
 		GetUserByID(ctx context.Context, user_id int) (*User, error)
 		GetUsers(ctx context.Context) ([]*User, error)
+		CreateAndInvite(ctx context.Context, user *User, invitationExp time.Duration, token string) error
+		Activate(ctx context.Context, token string) error
 	}
 	Comments interface {
 		Create(context.Context, *Comment) error
@@ -48,4 +52,18 @@ func NewPGStorage(db *sql.DB) Storage {
 			db: db,
 		},
 	}
+}
+
+// withTx wraps a callback in a database transaction.
+func withTx(db *sql.DB, ctx context.Context, fn func(*sql.Tx) error) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	if err := fn(tx); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }

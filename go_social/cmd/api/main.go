@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/Milua25/go_social/internal/db"
 	"github.com/Milua25/go_social/internal/env"
@@ -65,6 +66,8 @@ func main() {
 		},
 		env:    env.GetString("ENV", "development"),
 		logger: logger,
+		mail:   mailConfig{time.Hour * 24 * 3}, //3 days
+
 	}
 
 	db, err := db.New(cfg.db.addr, cfg.db.maxOpenConns, cfg.db.maxIdleConns, cfg.db.maxIdleTime)
@@ -76,9 +79,11 @@ func main() {
 
 	// Migration
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
+
 	m, err := migrate.NewWithDatabaseInstance(
 		"file:////Users/ayomideademilua/Development/go_crash_course/go_social/cmd/migrate/migrations",
 		"postgres", driver)
+
 	if err != nil {
 		log.Fatal(err)
 	}
