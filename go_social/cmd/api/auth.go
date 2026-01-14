@@ -3,8 +3,10 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 
+	"github.com/Milua25/go_social/internal/mailer"
 	"github.com/Milua25/go_social/internal/store"
 	"github.com/google/uuid"
 )
@@ -83,6 +85,26 @@ func (app *application) registerUserHandler(w http.ResponseWriter, req *http.Req
 	userWithToken := userWithToken{
 		User:  user,
 		Token: plainToken.String(),
+	}
+
+	activationURL := fmt.Sprintf("%s/confirm/%s", app.config.frontendURL, plainToken)
+
+	isProdEnv := app.config.env == "production"
+	vars := struct {
+		Username      string
+		ActivationURL string
+	}{
+		Username:      user.Username,
+		ActivationURL: activationURL,
+	}
+	// send mail
+	if err = app.mailer.Send(mailer.UserWelcometemplate, user.Username, user.Email, vars, !isProdEnv); err != nil {
+		app.config.logger.Errorw("error sending welcome email", "error", err)
+
+		// rollback user creatinf if email fails (SAGA pattern)
+		if err := app.store.Users.Delete(ctx, user.ID); err != nil {
+			app.config.logger.Errorw("error deleting user", "error", err)
+		}
 	}
 
 	if err := writeJSON(w, http.StatusCreated, userWithToken); err != nil {

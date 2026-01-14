@@ -7,6 +7,7 @@ import (
 
 	"github.com/Milua25/go_social/internal/db"
 	"github.com/Milua25/go_social/internal/env"
+	"github.com/Milua25/go_social/internal/mailer"
 	"github.com/Milua25/go_social/internal/store"
 	"go.uber.org/zap"
 
@@ -56,8 +57,9 @@ func main() {
 	log.Println(psqlInfo)
 
 	cfg := config{
-		addr:   env.GetString("ADDR", ":8080"),
-		apiURL: env.GetString("EXTERNAL_URL", "localhost:3000"),
+		addr:        env.GetString("ADDR", ":8080"),
+		apiURL:      env.GetString("EXTERNAL_URL", "localhost:3000"),
+		frontendURL: env.GetString("FRONTEND_URL", "http://localhost:4000"),
 		db: dbConfig{
 			addr:         psqlInfo,
 			maxOpenConns: env.GetInt("DB_MAX_OPEN_CONN", 30),
@@ -66,8 +68,13 @@ func main() {
 		},
 		env:    env.GetString("ENV", "development"),
 		logger: logger,
-		mail:   mailConfig{time.Hour * 24 * 3}, //3 days
-
+		mail: mailConfig{
+			exp:       time.Hour * 24 * 3,
+			fromEmail: env.GetString("FROM_EMAIL", ""),
+			sendGrid: sendGridConfig{
+				apiKey: env.GetString("SENDGRID_API_KEY", ""),
+			},
+		},
 	}
 
 	db, err := db.New(cfg.db.addr, cfg.db.maxOpenConns, cfg.db.maxIdleConns, cfg.db.maxIdleTime)
@@ -99,9 +106,12 @@ func main() {
 
 	store := store.NewPGStorage(db)
 
+	mailer := mailer.NenSendGrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
+
 	app := &application{
 		config: cfg,
 		store:  store,
+		mailer: mailer,
 	}
 
 	if err := app.run(); err != nil {
