@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Milua25/go_social/docs"
+	"github.com/Milua25/go_social/internal/auth"
 	"github.com/Milua25/go_social/internal/mailer"
 	"github.com/Milua25/go_social/internal/store"
 	"github.com/go-chi/chi/v5"
@@ -16,9 +17,10 @@ import (
 )
 
 type application struct {
-	config config
-	store  store.Storage
-	mailer mailer.Client
+	config         config
+	store          store.Storage
+	mailer         mailer.Client
+	authenticatior auth.Authenticator
 }
 
 type config struct {
@@ -30,6 +32,22 @@ type config struct {
 	mail        mailConfig
 	mailtrap    mailTrapConfig
 	frontendURL string
+	auth        authConfig
+}
+
+type authConfig struct {
+	basic basicConfig
+	token tokenConfig
+}
+
+type tokenConfig struct {
+	secret string
+	exp    time.Duration
+	issuer string
+}
+type basicConfig struct {
+	user string
+	pass string
 }
 
 type mailConfig struct {
@@ -96,7 +114,7 @@ func (app *application) mount() http.Handler {
 
 	r.Route("/v1", func(r chi.Router) {
 		// health
-		r.HandleFunc("/health", app.healthCheckHandler)
+		r.With(app.BasicAuthMiddleware()).Get("/health", app.healthCheckHandler)
 
 		// config
 		docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
@@ -104,6 +122,7 @@ func (app *application) mount() http.Handler {
 
 		// posts
 		r.Route("/posts", func(r chi.Router) {
+			r.Use(app.AuthTokenMiddleware)
 			r.Post("/create", app.createPostHandler)
 
 			r.Route("/{postID}", func(r chi.Router) {
@@ -119,10 +138,15 @@ func (app *application) mount() http.Handler {
 			r.Put("/activate/{token}", app.activateUserHandler)
 
 			r.Get("/", app.getAllUsersHandler)
+
 			r.Group(func(r chi.Router) {
+				r.Use(app.AuthTokenMiddleware)
+				// r.Use(app.getUserContextIdMiddleware)
 				r.Get("/feed", app.getUserFeedHandler)
 			})
+
 			r.Route("/{userID}", func(r chi.Router) {
+				r.Use(app.AuthTokenMiddleware)
 				r.Use(app.getUserContextIdMiddleware)
 				r.Get("/", app.getUserByIdHandler)
 				r.Put("/follow", app.followUserHandler)
@@ -134,6 +158,7 @@ func (app *application) mount() http.Handler {
 		// public routes
 		r.Route("/authentication", func(r chi.Router) {
 			r.Post("/user", app.registerUserHandler)
+			r.Post("/token", app.createTokenHandler)
 		})
 
 	})

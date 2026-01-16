@@ -58,8 +58,6 @@ type createPostPayload struct {
 //	@Router			/posts/create [post]
 func (app *application) createPostHandler(w http.ResponseWriter, req *http.Request) {
 
-	userID := 1
-
 	var payload createPostPayload
 
 	if err := readJSON(w, req, &payload); err != nil {
@@ -71,6 +69,7 @@ func (app *application) createPostHandler(w http.ResponseWriter, req *http.Reque
 		app.badRequestError(w, req, err)
 		return
 	}
+	userID := getUserFromCtx(req).ID
 
 	post := &store.Post{
 		Title:   payload.Title,

@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/Milua25/go_social/internal/auth"
 	"github.com/Milua25/go_social/internal/db"
 	"github.com/Milua25/go_social/internal/env"
 	"github.com/Milua25/go_social/internal/mailer"
@@ -46,6 +47,7 @@ const version = "0.0.1"
 // @description
 func main() {
 
+	tokenHost := "gophersocial"
 	// logger
 	logger := zap.Must(zap.NewProduction()).Sugar()
 	defer logger.Sync()
@@ -74,6 +76,17 @@ func main() {
 			},
 			mailTrap: mailTrapConfig{
 				apiKey: env.GetString("MAILTRAP_KEY", ""),
+			},
+		},
+		auth: authConfig{
+			basic: basicConfig{
+				user: env.GetString("AUTH_BASIC_USER", "admin"),
+				pass: env.GetString("AUTH_BASIC_PASS", "admin"),
+			},
+			token: tokenConfig{
+				secret: env.GetString("AUTH_TOKEN_SECRET", "example"),
+				exp:    time.Hour * 24 * 3,
+				issuer: tokenHost,
 			},
 		},
 	}
@@ -114,10 +127,13 @@ func main() {
 
 	mailtrap, err := mailer.NewMailTrapClient(cfg.mail.mailTrap.apiKey, cfg.mail.fromEmail)
 
+	jwtAuthenticator := auth.NewJWTAuthenticator(cfg.auth.token.secret, cfg.auth.token.issuer, cfg.auth.token.issuer)
+
 	app := &application{
-		config: cfg,
-		store:  store,
-		mailer: mailtrap,
+		config:         cfg,
+		store:          store,
+		mailer:         mailtrap,
+		authenticatior: jwtAuthenticator,
 	}
 
 	if err := app.run(); err != nil {

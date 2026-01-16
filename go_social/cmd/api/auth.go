@@ -5,9 +5,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/Milua25/go_social/internal/mailer"
 	"github.com/Milua25/go_social/internal/store"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -112,4 +114,59 @@ func (app *application) registerUserHandler(w http.ResponseWriter, req *http.Req
 	if err := writeJSON(w, http.StatusCreated, userWithToken); err != nil {
 		app.internalServerError(w, req, err)
 	}
+}
+
+type CreateUserTokenPayload struct {
+	Email    string `json:"email" validate:"required,email,max=255"`
+	Password string `json:"password" validate:"required, min=3,max=72"`
+}
+
+func (app *application) createTokenHandler(w http.ResponseWriter, req *http.Request) {
+	// parse payload creds
+	var payload CreateUserTokenPayload
+
+	if err := readJSON(w, req, &payload); err != nil {
+		app.badRequestError(w, req, err)
+		return
+	}
+
+	if err := Validate.Struct(payload); err != nil {
+		app.badRequestError(w, req, err)
+		return
+	}
+
+	// fetch the user (check if the user exist) from the payload
+	user, err := app.store.Users.GetUserByEmail(req.Context(), payload.Email)
+
+	if err != nil {
+		switch err {
+		case store.ErrNotFound:
+			app.unAuthorizedResponseError(w, req, err)
+			return
+		default:
+			app.internalServerError(w, req, err)
+			return
+		}
+	}
+	// generate the token -> add claims
+	claims := jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(app.config.auth.token.exp).Unix(),
+		"iat": time.Now().Unix(),
+		"nbf": time.Now().Unix(),
+		"iss": app.config.auth.token.issuer,
+		"aud": app.config.auth.token.issuer,
+	}
+
+	token, err := app.authenticatior.GenerateToken(claims)
+	if err != nil {
+		app.internalServerError(w, req, err)
+		return
+	}
+
+	// send it to the client
+	if err := app.jsonResponse(w, http.StatusCreated, token); err != nil {
+		app.internalServerError(w, req, err)
+	}
+
 }

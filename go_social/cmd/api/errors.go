@@ -27,3 +27,16 @@ func (app *application) conflictResponseError(w http.ResponseWriter, req *http.R
 	app.config.logger.Errorf("conflict server error: %s path: %s error: %s", req.Method, req.URL.Path, err)
 	writeJSONError(w, http.StatusConflict, err.Error())
 }
+
+// unAuthorizedtResponseError logs and sends a 401 response.
+func (app *application) unAuthorizedResponseError(w http.ResponseWriter, req *http.Request, err error) {
+	app.config.logger.Errorf("unauthorized server error: %s path: %s error: %s", req.Method, req.URL.Path, err)
+	writeJSONError(w, http.StatusUnauthorized, err.Error())
+}
+
+// unAuthorizedtResponseError logs and sends a 401 response.
+func (app *application) unAuthorizedBasicResponseError(w http.ResponseWriter, req *http.Request, err error) {
+	app.config.logger.Errorf("unauthorized server error: %s path: %s error: %s", req.Method, req.URL.Path, err)
+	w.Header().Set("www-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+	writeJSONError(w, http.StatusUnauthorized, err.Error())
+}
