@@ -23,8 +23,9 @@ func (a *JWTAuthenticator) GenerateToken(claims jwt.Claims) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return tokenString, err
+	return tokenString, nil
 }
+
 func (a *JWTAuthenticator) ValidateToken(token string) (*jwt.Token, error) {
 
 	return jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {

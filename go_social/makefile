@@ -29,4 +29,13 @@ seed:
 .PHONY: gen-docs
 gen-docs:
 	@swag init -g ./api/main.go -d cmd,internal && swag fmt
-	
+
+
+.PHONY: test
+test:
+	@go test -v ./...
+
+
+.PHONY: clear-cache
+clear-cache:
+	@go clean -cache -testcache -modcache

@@ -107,7 +107,7 @@ func (app *application) getPostHandler(w http.ResponseWriter, req *http.Request)
 
 	post_id, err := strconv.Atoi(chi.URLParam(req, "postID"))
 	if err != nil {
-		app.config.logger.Errorln(err)
+		app.logger.Errorln(err)
 		return
 	}
 
@@ -159,7 +159,7 @@ func (app *application) deletePostHandler(w http.ResponseWriter, req *http.Reque
 
 	post_id, err := strconv.Atoi(chi.URLParam(req, "postID"))
 	if err != nil {
-		app.config.logger.Errorln(err)
+		app.logger.Errorln(err)
 		return
 	}
 
@@ -236,7 +236,7 @@ func (app *application) postsContextMiddleware(next http.Handler) http.Handler {
 
 		post_id, err := strconv.Atoi(chi.URLParam(req, "postID"))
 		if err != nil {
-			app.config.logger.Errorln(err)
+			app.logger.Errorln(err)
 			return
 		}
 

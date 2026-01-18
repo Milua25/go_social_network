@@ -1,13 +1,20 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/Milua25/go_social/docs"
 	"github.com/Milua25/go_social/internal/auth"
+	"github.com/Milua25/go_social/internal/env"
 	"github.com/Milua25/go_social/internal/mailer"
+	"github.com/Milua25/go_social/internal/ratelimiter"
 	"github.com/Milua25/go_social/internal/store"
 	"github.com/Milua25/go_social/internal/store/cache"
 	"github.com/go-chi/chi/v5"
@@ -24,6 +31,7 @@ type application struct {
 	authenticatior auth.Authenticator
 	cacheStorage   cache.Storage
 	logger         *zap.SugaredLogger
+	rateLimiter    ratelimiter.Limiter
 }
 
 type config struct {
@@ -31,13 +39,14 @@ type config struct {
 	db          dbConfig
 	env         string
 	apiURL      string
-	logger      *zap.SugaredLogger
 	mail        mailConfig
 	mailtrap    mailTrapConfig
 	frontendURL string
 	auth        authConfig
 	redis       redisConfig
+	rateLimiter ratelimiter.Config
 }
+
 type redisConfig struct {
 	addr    string
 	pw      string
@@ -99,11 +108,16 @@ type dbConfig struct {
 func (app *application) mount() http.Handler {
 	r := chi.NewRouter()
 
+	// A good base middleware stack
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.Logger)
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
 	// Basic CORS
 	// for more ideas, see: https://developer.github.com/v3/#cross-origin-resource-sharing
 	r.Use(cors.Handler(cors.Options{
 		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
-		AllowedOrigins: []string{"https://*", "http://*"},
+		AllowedOrigins: []string{env.GetString("ALLOWED_CORS_ORIGINs", "http://localhost:3000")},
 		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
@@ -111,12 +125,7 @@ func (app *application) mount() http.Handler {
 		AllowCredentials: false,
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
-
-	// A good base middleware stack
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.Logger)
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
+	r.Use(app.RateLimiterMidddleware)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("welcome"))
@@ -195,6 +204,34 @@ func (app *application) run() error {
 		IdleTimeout:  time.Minute,
 	}
 
-	app.config.logger.Infow("Server running on", "addr", srv.Addr, "env", app.config.env)
-	return srv.ListenAndServe()
+	shutdown := make(chan error)
+	go func() {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+		s := <-quit
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		app.logger.Infow("signal caught", "signal", s.String())
+
+		shutdown <- srv.Shutdown(ctx)
+	}()
+
+	app.logger.Infow("Server running on", "addr", srv.Addr, "env", app.config.env)
+
+	err := srv.ListenAndServe()
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	err = <-shutdown
+	if err != nil {
+		return err
+	}
+
+	app.logger.Infow("server has stopped", "addr", app.config.addr, "env", app.config.env)
+
+	return nil
+
 }

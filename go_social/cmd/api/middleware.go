@@ -76,7 +76,7 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 
 		claims := jwtToken.Claims.(jwt.MapClaims)
 
-		userID, err := strconv.ParseInt(fmt.Sprint("%.f", claims["sub"]), 10, 64)
+		userID, err := strconv.ParseInt(fmt.Sprintf("%.f", claims["sub"]), 10, 64)
 
 		if err != nil {
 			app.unAuthorizedResponseError(w, r, err)
@@ -160,4 +160,15 @@ func (app *application) checkRolePrecedence(ctx context.Context, user *store.Use
 
 	return user.Role.Level >= role.Level, nil
 
+}
+
+func (app *application) RateLimiterMidddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if app.config.rateLimiter.Enabled {
+			if allow, retyrAfter := app.rateLimiter.Allow(r.RemoteAddr); !allow {
+				app.rateLmitExceededResponse(w, r, retyrAfter.String())
+				return
+			}
+		}
+	})
 }

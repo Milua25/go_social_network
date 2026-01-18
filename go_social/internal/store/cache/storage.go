@@ -14,6 +14,7 @@ type Storage struct {
 	}
 }
 
+// NewRedisDBStorage returns a cache Storage backed by Redis client.
 func NewRedisDBStorage(rdb *redis.Client) Storage {
 	return Storage{
 		Users: &UserStore{rdb: rdb},

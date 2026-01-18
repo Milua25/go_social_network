@@ -9,6 +9,7 @@ import (
 	"github.com/Milua25/go_social/internal/db"
 	"github.com/Milua25/go_social/internal/env"
 	"github.com/Milua25/go_social/internal/mailer"
+	"github.com/Milua25/go_social/internal/ratelimiter"
 	"github.com/Milua25/go_social/internal/store"
 	"github.com/Milua25/go_social/internal/store/cache"
 	"github.com/go-redis/redis/v8"
@@ -68,8 +69,7 @@ func main() {
 			maxIdleConns: env.GetInt("DB_MAX_IDLE_CONN", 30),
 			maxIdleTime:  env.GetString("DB_MAX_IDLE_TIME", "15m"),
 		},
-		env:    env.GetString("ENV", "development"),
-		logger: logger,
+		env: env.GetString("ENV", "development"),
 		mail: mailConfig{
 			exp:       time.Hour * 24 * 3,
 			fromEmail: env.GetString("FROM_EMAIL", ""),
@@ -96,6 +96,11 @@ func main() {
 			pw:      env.GetString("REDIS_PW", ""),
 			db:      env.GetInt("REDIS_DB", 0),
 			enabled: env.GetBool("ENABLE_REDIS", false),
+		},
+		rateLimiter: ratelimiter.Config{
+			RequestsPerTimeFrame: env.GetInt("RATELIMITER_REQUESTS_COUNT", 20),
+			TimeFrame:            time.Second * 5,
+			Enabled:              env.GetBool("RATE_LIMITER_ENABLED", true),
 		},
 	}
 
@@ -146,6 +151,11 @@ func main() {
 
 	jwtAuthenticator := auth.NewJWTAuthenticator(cfg.auth.token.secret, cfg.auth.token.issuer, cfg.auth.token.issuer)
 
+	rateLmiter := ratelimiter.NewFixedWindowLimiter(
+		cfg.rateLimiter.RequestsPerTimeFrame,
+		cfg.rateLimiter.TimeFrame,
+	)
+
 	app := &application{
 		config:         cfg,
 		store:          store,
@@ -153,6 +163,7 @@ func main() {
 		authenticatior: jwtAuthenticator,
 		logger:         logger,
 		cacheStorage:   cache.NewRedisDBStorage(redisDB),
+		rateLimiter:    rateLmiter,
 	}
 
 	if err := app.run(); err != nil {
