@@ -10,6 +10,8 @@ import (
 	"github.com/Milua25/go_social/internal/env"
 	"github.com/Milua25/go_social/internal/mailer"
 	"github.com/Milua25/go_social/internal/store"
+	"github.com/Milua25/go_social/internal/store/cache"
+	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -89,6 +91,12 @@ func main() {
 				issuer: tokenHost,
 			},
 		},
+		redis: redisConfig{
+			addr:    env.GetString("REDIS_ADDR", "localhost:6379"),
+			pw:      env.GetString("REDIS_PW", ""),
+			db:      env.GetInt("REDIS_DB", 0),
+			enabled: env.GetBool("ENABLE_REDIS", false),
+		},
 	}
 
 	logger.Info(cfg)
@@ -99,6 +107,15 @@ func main() {
 	}
 
 	defer db.Close()
+
+	var redisDB *redis.Client
+
+	if cfg.redis.enabled {
+		redisDB = cache.NewRedisClient(cfg.redis.addr, cfg.redis.pw, cfg.redis.db)
+		logger.Info("redis connection established")
+	}
+
+	cache.NewRedisDBStorage(redisDB)
 
 	// Migration
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
@@ -134,6 +151,8 @@ func main() {
 		store:          store,
 		mailer:         mailtrap,
 		authenticatior: jwtAuthenticator,
+		logger:         logger,
+		cacheStorage:   cache.NewRedisDBStorage(redisDB),
 	}
 
 	if err := app.run(); err != nil {

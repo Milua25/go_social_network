@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Milua25/go_social/internal/store"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -82,7 +83,13 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		ctx := r.Context()
-		user, err := app.store.Users.GetUserByID(r.Context(), int(userID))
+
+		// user, err := app.store.Users.GetUserByID(r.Context(), int(userID))
+		// if err != nil {
+		// 	app.unAuthorizedResponseError(w, r, err)
+		// 	return
+		// }
+		user, err := app.getUser(ctx, userID)
 		if err != nil {
 			app.unAuthorizedResponseError(w, r, err)
 			return
@@ -92,4 +99,65 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func (app *application) getUser(ctx context.Context, userID int64) (*store.User, error) {
+
+	if !app.config.redis.enabled {
+		return app.store.Users.GetUserByID(ctx, int(userID))
+	}
+
+	app.logger.Infow("cache hit", "key", "user", "id", userID)
+	user, err := app.cacheStorage.Users.Get(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		app.logger.Infow("fetching from DB", "id", userID)
+		storeUser, err := app.store.Users.GetUserByID(ctx, int(userID))
+		if err != nil {
+			return nil, err
+		}
+		err = app.cacheStorage.Users.Set(ctx, user)
+		if err != nil {
+			return nil, err
+		}
+		return storeUser, nil
+	}
+
+	return user, nil
+}
+
+func (app *application) checkPostOwnerShipMiddleware(requiredRole string, next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := getUserFromCtx(r)
+
+		post := getPostFromCtx(r)
+
+		if post.UserID == user.ID {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// role precedence check
+		allowed, err := app.checkRolePrecedence(r.Context(), user, requiredRole)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+		if !allowed {
+			app.forbiddenResponseError(w, r, err)
+			return
+		}
+	})
+}
+
+func (app *application) checkRolePrecedence(ctx context.Context, user *store.User, roleName string) (bool, error) {
+	role, err := app.store.Roles.GetByName(ctx, roleName)
+	if err != nil {
+		return false, err
+	}
+
+	return user.Role.Level >= role.Level, nil
+
 }

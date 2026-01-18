@@ -40,3 +40,10 @@ func (app *application) unAuthorizedBasicResponseError(w http.ResponseWriter, re
 	w.Header().Set("www-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
 	writeJSONError(w, http.StatusUnauthorized, err.Error())
 }
+
+// forbiddenResponseError logs and sends a 401 response.
+func (app *application) forbiddenResponseError(w http.ResponseWriter, req *http.Request, err error) {
+	app.config.logger.Errorf("forbidden response error: %s path: %s error: %s", req.Method, req.URL.Path, err)
+
+	writeJSONError(w, http.StatusForbidden, "forbidden")
+}

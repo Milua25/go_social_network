@@ -31,6 +31,8 @@ type User struct {
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
 	IsActive  bool      `json:"is_active"`
+	RoleID    int64     `json:"role_id"`
+	Role      Role      `json:"role"`
 }
 
 type password struct {
@@ -63,4 +65,11 @@ type Follower struct {
 	UserID     int64  `json:"user_id"`
 	FollowerID int64  `json:"follower_id"`
 	CreatedAt  string `json:"created_at"`
+}
+
+type Role struct {
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:description`
+	Level       int    `json:"level"`
 }

@@ -36,6 +36,9 @@ type Storage struct {
 		Follow(ctx context.Context, followerId, userId int64) error
 		UnFollow(ctx context.Context, followerId, userId int64) error
 	}
+	Roles interface {
+		GetByName(context.Context, string) (*Role, error)
+	}
 }
 
 // NewPGStorage wires up the concrete Postgres-backed stores into a single Storage facade.
@@ -51,6 +54,9 @@ func NewPGStorage(db *sql.DB) Storage {
 			db: db,
 		},
 		Followers: &FollowerStore{
+			db: db,
+		},
+		Roles: &RoleStore{
 			db: db,
 		},
 	}

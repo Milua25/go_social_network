@@ -19,10 +19,18 @@ var (
 // Create inserts a new user within an existing transaction and sets ID/CreatedAt.
 func (us *UserStore) Create(ctx context.Context, tx *sql.Tx, users *User) error {
 	query := `
-	INSERT INTO users (username, password, email) VALUES ($1, $2, $3) RETURNING id, created_at
+	INSERT INTO users (username, password, email) VALUES ($1, $2, $3, (SELECT id FROM roles WHERE name = $)4) RETURNING id, created_at
 	`
 
-	err := tx.QueryRowContext(ctx, query, users.Username, users.Password.hash, users.Email).Scan(&users.ID, &users.CreatedAt)
+	ctx, cancel := context.WithTimeout(ctx, QueryDurationTime)
+	defer cancel()
+
+	role := users.Role.Name
+	if role == "" {
+		role = "user"
+	}
+
+	err := tx.QueryRowContext(ctx, query, users.Username, users.Password.hash, users.Email, role).Scan(&users.ID, &users.CreatedAt)
 	if err != nil {
 		switch {
 		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
@@ -40,21 +48,24 @@ func (us *UserStore) Create(ctx context.Context, tx *sql.Tx, users *User) error 
 // GetUserByID fetches a single user by its ID.
 func (us *UserStore) GetUserByID(ctx context.Context, user_id int) (*User, error) {
 	query := `
-		SELECT id, username,email, password, created_at FROM users WHERE id = $1 AND is_active = true
+		SELECT user.id, username,email, password, created_at FROM users 
+		JOIN roles ON (users.role_id = roles.id) 
+		WHERE user.id = $1 AND is_active = true
 	`
 	ctx, cancel := context.WithTimeout(ctx, QueryDurationTime)
 
 	defer cancel()
 	var user User
 
-	err := us.db.QueryRowContext(ctx, query, user_id).Scan(&user.ID, &user.Username, &user.Email, &user.Password.hash, &user.CreatedAt)
+	err := us.db.QueryRowContext(ctx, query, user_id).Scan(&user.ID, &user.Username, &user.Email, &user.Password.hash, &user.CreatedAt, &user.Role.ID, &user.Role.Name, &user.Role.Level, &user.Role.Description)
+
 	if err != nil {
 		return &User{}, err
 	}
 	return &user, nil
 }
 
-// GetUserByEmail fetches a single user by its Email.
+// GetUserByEmail fetches a single active user by email.
 func (us *UserStore) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	query := `
 		SELECT id, username,email, password, created_at FROM users WHERE email = $1 AND is_active = true
@@ -201,6 +212,7 @@ func (us *UserStore) deleteUserInvitation(ctx context.Context, tx *sql.Tx, userI
 	return err
 }
 
+// Delete removes a user and any invitation rows in a single transaction.
 func (us *UserStore) Delete(ctx context.Context, userId int64) error {
 	return withTx(us.db, ctx, func(tx *sql.Tx) error {
 		if err := us.delete(ctx, tx, userId); err != nil {
@@ -214,7 +226,7 @@ func (us *UserStore) Delete(ctx context.Context, userId int64) error {
 	})
 }
 
-// deleteUserInvitation removes an invitation row once used.
+// delete removes a user row by ID.
 func (us *UserStore) delete(ctx context.Context, tx *sql.Tx, userId int64) error {
 	query := `DELETE FROM users WHERE id = $1`
 

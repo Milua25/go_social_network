@@ -28,3 +28,16 @@ func GetInt(key string, fallback int) int {
 	}
 	return keyInt
 }
+
+func GetBool(key string, falllback bool) bool {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		return falllback
+	}
+
+	boolValue, err := strconv.ParseBool(val)
+	if err != nil {
+		return falllback
+	}
+	return boolValue
+}

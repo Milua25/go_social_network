@@ -9,6 +9,7 @@ import (
 	"github.com/Milua25/go_social/internal/auth"
 	"github.com/Milua25/go_social/internal/mailer"
 	"github.com/Milua25/go_social/internal/store"
+	"github.com/Milua25/go_social/internal/store/cache"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -21,6 +22,8 @@ type application struct {
 	store          store.Storage
 	mailer         mailer.Client
 	authenticatior auth.Authenticator
+	cacheStorage   cache.Storage
+	logger         *zap.SugaredLogger
 }
 
 type config struct {
@@ -33,6 +36,13 @@ type config struct {
 	mailtrap    mailTrapConfig
 	frontendURL string
 	auth        authConfig
+	redis       redisConfig
+}
+type redisConfig struct {
+	addr    string
+	pw      string
+	db      int
+	enabled bool
 }
 
 type authConfig struct {
@@ -128,8 +138,9 @@ func (app *application) mount() http.Handler {
 			r.Route("/{postID}", func(r chi.Router) {
 				r.Use(app.postsContextMiddleware)
 				r.Get("/", app.getPostHandler)
-				r.Patch("/", app.patchPostHandler)
-				r.Delete("/", app.deletePostHandler)
+				r.Patch("/", app.checkPostOwnerShipMiddleware("moderator", app.patchPostHandler))
+
+				r.Delete("/", app.checkPostOwnerShipMiddleware("admin", app.deletePostHandler))
 			})
 		})
 

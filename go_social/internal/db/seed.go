@@ -167,6 +167,9 @@ func generateUsers(num int) []*store.User {
 		users[i] = &store.User{
 			Username: usernames[i%len(usernames)] + fmt.Sprintf("%d", i),
 			Email:    usernames[i%len(usernames)] + fmt.Sprintf("%d", i) + "@example.com",
+			Role: store.Role{
+				Name: "user",
+			},
 		}
 		if err := users[i].Password.Set("password123"); err != nil {
 			continue
