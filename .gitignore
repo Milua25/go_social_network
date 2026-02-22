@@ -181,3 +181,11 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+go_interview_prep/.vscode/settings.json
+go_interview_prep/.DS_Store
+go_interview_prep/.idea/.gitignore
+go_interview_prep/.idea/go_interview_prep.iml
+go_interview_prep/.idea/go.imports.xml
+go_interview_prep/.idea/modules.xml
+go_interview_prep/.idea/vcs.xml
+.DS_Store
